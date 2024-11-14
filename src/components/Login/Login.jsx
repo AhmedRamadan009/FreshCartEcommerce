@@ -1,66 +1,98 @@
-import React, { useState } from 'react'
-import styles from './Login.module.css'
+import axios from 'axios';
 import { useFormik } from 'formik'
-import * as Yup from 'yup'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import * as  Yup from 'yup' ;
+import { UserContext } from '../../Context/UserContext';
 
-export default function Login({saveUserData}) {
-let navigate =useNavigate()
-const [isloading, setisloading] = useState(false)
-const [messageError, setmessageError] = useState('')
+export default function Login() {
 
-  async function handleLogin(values){
-    setisloading(true)
-   let {data}= await axios.post(`https://ecommerce.routemisr.com/api/v1/auth/signin`,values).catch((errr)=>{
-    setisloading(false)
-    setmessageError(errr.response.data.message);
-   })
+    const [isLoading, setisLoading] = useState(false)
+    const [errorMessage, seterrorMessage] = useState("")
 
-   if(data.message==="success")
-   {
-    localStorage.setItem('userToken',data.token);
-    saveUserData();
-    setisloading(false)
-    navigate('/')
-   }
-    console.log(values);
-  }
+    let navigte=useNavigate()
 
-  let validationSchema = Yup.object({
-    email:Yup.string().required("email is required").email("email is invalid"),
-    password:Yup.string().required("password is required").matches(/^[A-Z][a-z0-9]{5,10}$/,"Password must start with Uppercase and max length is 10"),
-    
-  })
-  let formik =useFormik({
-    initialValues:{
-      email:'',
-      password:''
-      
-    },validationSchema,
-    onSubmit:handleLogin
-  })
-  return<>
-  <div className="w-75 mx-auto py-4">
 
-    <h3>Login Now:</h3>
-    {messageError.length>0 ? <div className="alert alert-danger">{messageError} </div>:null}
-   
-    
-    <form onSubmit={formik.handleSubmit}>
+    let {setuserToken}=useContext(UserContext)
+    function handleLogin(values){
 
-      <label htmlFor="email">Email:</label>
-      <input onBlur={formik.handleBlur} className='form-control  mb-2' onChange={formik.handleChange} value={formik.values.email} type="email" name='email' id='email'/>
-        {formik.errors.email && formik.touched.email? <div className="alert alert-danger">{formik.errors.email}</div>:null}
+        setisLoading(true)
+        axios.post(`https://ecommerce.routemisr.com/api/v1/auth/signin`,values).then(({data})=>{
+            console.log(data);
 
-      <label htmlFor="password">Password:</label>
-      <input onBlur={formik.handleBlur} className='form-control  mb-2' onChange={formik.handleChange} value={formik.values.password} type="password" name='password' id='password'/>
-        {formik.errors.password && formik.touched.password? <div className="alert alert-danger">{formik.errors.password}</div>:null}
+            if(data.message==="success"){
+                setisLoading(false)
 
-          {isloading? <button type='button' className='btn bg-main text-white'><i className='fas fa-spinner fa-spin'></i></button>: <button disabled={!(formik.isValid && formik.dirty)} type='submit' className='btn bg-main text-white'>Login</button>}
+                localStorage.setItem('userToken',data.token)
+                setuserToken(data.token)
+
+
+                navigte('/')
+            }
+            
+        }).catch(err=>{
+
+                setisLoading(false)
+           seterrorMessage(err.response.data.message);
+            
+        })
+        
+    }
+
+    let validationSchema=Yup.object({
+
+        
+        email:Yup.string().required("email is required").email("email is invaild"),
+        password:Yup.string().required("password is required").matches(/^[A-Z][a-z0-9]{5,10}$/,"password must start with capital letter and max legnth is 10"),
        
-     
-    </form> 
-  </div>
-  </>
+    })
+
+
+    let formik=useFormik({
+        initialValues:{
+
+        email:"",
+        password:"",
+       
+
+        },validationSchema,
+
+        onSubmit:handleLogin
+
+    })
+  return (
+    <>
+    
+   <div className="w-75 mx-auto py-4">
+
+    <h3>Register Now</h3>
+    <form onSubmit={formik.handleSubmit}>
+        
+
+        
+        <label htmlFor="email">Email:</label>
+        <input onChange={formik.handleChange} onBlur={formik.handleBlur} value={formik.values.email} type="email" className='form-control' id='email' name='email' />
+        {formik.errors.email&&formik.touched.email?<div className='alert alert-danger'>{formik.errors.email}</div>
+        
+        :null}
+        <label htmlFor="password">Password:</label>
+        <input onChange={formik.handleChange} onBlur={formik.handleBlur} value={formik.values.password} type="password" className='form-control' id='password' name='password' />
+        {formik.errors.password&&formik.touched.password?<div className='alert alert-danger'>{formik.errors.password}</div>
+        
+        :null}
+       
+
+        {errorMessage.length>0?<div className="alert alert-danger mt-3">{errorMessage}</div>:null}
+
+        {isLoading?<button className='btn btn-outline-info mt-3'><i className='fas fa-spinner fa-spin text-primary '></i></button>: <button disabled={!(formik.isValid&&formik.dirty)} type='submit' className='btn btn-outline-info mt-3'>Login</button>}
+       
+
+
+
+    </form>
+
+   </div>
+    
+    </>
+  )
 }
